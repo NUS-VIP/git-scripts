@@ -6,7 +6,7 @@
 
 cmd=$1
 
-if [ $cmd = "test" ]; then
+if [ "$cmd" = "test" ]; then
 
     echo -e "Testing With Github account..."
     echo -e "You will see message like below: "
@@ -32,7 +32,7 @@ else
     read -p "Press any key to continue... " -n1 -s
 
     #creats a new ssh key
-    ssh-keygen -t rsa -C "$email" 2&>1 >> /dev/null
+    ssh-keygen -t rsa -C "$email" 
     eval "$(ssh-agent -s)"
     ssh-add ~/.ssh/id_rsa
 

@@ -16,3 +16,5 @@ git config --global user.name "$user"
 git config --globa user.email "$email"
 #cache your github password for some time period (now is 7776000 secs=90 days ) you need git 1.7.10 or higher to support this
 git config --global credential.helper 'cache --timeout=7776000'
+git config --global alias.st status
+git config --global alias.ci 'commit -v'
