@@ -2,8 +2,6 @@
 DIR=`dirname "$0"`
 
 
-repos_dir="./caffe"
-
 
 #clone
 setup() {
@@ -29,81 +27,58 @@ setup() {
     popd
 }
 
-#create branch 
-new_branch(){
 
-    branch_name=$1
-    upstream_branch=$2
+#update
+remote_down() {
     
-    if [ "$branch_name" = "" ] || [ "$upstream_branch" = "" ] ; then
-        echo "Usage: new_branch <local branch name> <upstream branch name>"
+    remote_repos="$1"
+    remote_branch="$2"
+    local_branch="$3"
+
+    if [ "$remote_repos" = "" ] || [ "$remote_branch" = "" ] || [ "$local_branch" = "" ] ; then
+        echo "$remote_repos, $local_branch, $remote_branch"
+        echo "Usage: down <remote repos> <remote branch> <local branch>"
         exit
     fi
 
     git remote update
-    git checkout -b $branch_name upstream/$upstream_branch  
-    #push branch to forked
-    git push forked $branch_name
 
+    if git branch | grep -sw "$local_branch" 2>&1>/dev/null; then
+        git checkout $local_branch
+    else
+        git checkout -b $local_branch $remote_repos/$remote_branch
+    fi
+    git rebase $remote_repos/$remote_branch
 
 }
 
-#update
-upstream_down() {
 
-    local_branch=$1
+remote_up(){
+
+    remote_repos=$1
+    local_branch=$3
     remote_branch=$2
 
-    if [ "$remote_branch" = "" ] || [ "$local_branch" = "" ] ; then
-        echo "Usage: upstream_down <local branch> <upstream branch>"
+    if [ "$remote_repos" = "" ] || [ "$remote_branch" = "" ] || [ "$local_branch" = "" ] ; then
+        echo "Usage: up <remote repos> <remote branch> <local branch> "
         exit
     fi
 
     git remote update
     git checkout $local_branch
-    git rebase upstream/$remote_branch
-
-}
-
-
-forked_down(){
-
-    branch=$1
-
-    if [ "$branch" = "" ] ; then
-        echo "Usage: forked_down <branch> "
-        exit
+    if git ls-remote $remote_repos | grep -sw "$remote_branch" 2>&1>/dev/null; then 
+        echo "remote branch exists, syncing it first"
+        git rebase $remote_repos/$remote_branch 
     fi
-
-    git remote update
-    git checkout -b $branch
-    git rebase forked/$branch
-
-}
-
-forked_up(){
-    branch=$1
-
-    if [ "$branch" = "" ] ; then
-        echo "Usage: forked_up <branch> "
-        exit
-    fi
-
-    git remote update
-    git checkout $branch
-    if [ $? != 0 ]; then 
-        exit
-    fi
-    git rebase forked/$branch 
-    git push forked
-    
+    git push $remote_repos $local_branch:$remote_branch
 }
 
 delete_branch(){
-    branch=$1
+    remote_repos=$1
+    branch=$2
 
-    if [ "$branch" = "" ] ; then
-        echo "Usage: forked_up <branch> "
+    if [ "$branch" = "" ] || [ "$remote_repos" = "" ] ; then
+        echo "Usage: delete <branch> - this will delete the branches with input name both locally and remotely "
         exit
     fi
 
@@ -112,12 +87,12 @@ delete_branch(){
     git checkout master 
     git branch -D $branch 
     #delete forked branch
-    git push forked :$branch
+    git push $remote_repos :$branch
 }
 
 usage() {
 
-    echo -e "Usage: cmd <s | -setup> <nb |-new-branch> <ud | -upstream-down> <fu | -forked-up> <fd | -forked-down> <db | -delete-branch> <h|-help>"
+    echo -e "Usage: cmd < s | -setup>  < d | -down > < u | -up> < db | -delete-branch > <h|-help>"
 }
 
 if [ ! $# -gt 0 ]; then
@@ -134,27 +109,23 @@ while [ "$1" != "" ]; do
                                 reposdir=$1
                                 setup $forked $upstream $reposdir
                                 ;; 
-        nb | -new-branch )    shift
-                                lobal_branch=$1
-                              shift
-                                upstream_branch=$1
-                                new_branch $lobal_branch $upstream_branch
-                                ;;
-        ud | -upstream-down ) shift
-                                local_branch=$1
+
+        u | -up )             shift
+                                remote_repos=$1
                               shift
                                 remote_branch=$1
-                                upstream_down $local_branch $remote_branch
+                              shift
+                                local_branch=$1
+                              remote_up $remote_repos $remote_branch $local_branch
                                 ;;
 
-        fu | -forked-up )       shift
-                                branch=$1
-                                forked_up $branch
-                                ;;
-
-        fd | -forked-down )     shift
-                                branch=$1
-                                forked_down $branch
+        d | -down )           shift
+                                remote_repos=$1
+                              shift  
+                                remote_branch=$1
+                              shift
+                                local_branch=$1
+                              remote_down $remote_repos $remote_branch $local_branch
                                 ;;        
         db | -delete-branch ) shift
                                 branch=$1
