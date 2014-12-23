@@ -18,3 +18,4 @@ git config --globa user.email "$email"
 git config --global credential.helper 'cache --timeout=7776000'
 git config --global alias.st status
 git config --global alias.ci 'commit -v'
+git config --global color.ui auto
